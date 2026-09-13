@@ -10,7 +10,9 @@
     <script src="https://unpkg.com/lucide@latest"></script>
     <!-- Canvas Confetti -->
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
-    <!-- Google Fonts: Vazirmatn & Cinzel Decorative for HP vibes -->
+    <!-- SheetJS (xlsx) for direct file upload in browser -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <!-- Google Fonts: Vazirmatn & Cinzel Decorative -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700;900&family=Vazirmatn:wght@300;400;600;700;900&display=swap" rel="stylesheet">
@@ -30,7 +32,6 @@
                             darkRuby: '#3c0000',
                             bronze: '#946b2d',
                             midnight: '#0b0c10',
-                            cardBg: 'rgba(26, 16, 23, 0.75)',
                         }
                     },
                     animation: {
@@ -63,42 +64,19 @@
             min-height: 100vh;
         }
 
-        .hp-border {
-            border: 2px solid #d4af37;
-            position: relative;
-        }
-        .hp-border::before {
-            content: "✧";
-            position: absolute;
-            top: -12px;
-            left: -10px;
-            color: #d4af37;
-            font-size: 18px;
-        }
-        .hp-border::after {
-            content: "✧";
-            position: absolute;
-            bottom: -12px;
-            right: -10px;
-            color: #d4af37;
-            font-size: 18px;
-        }
-
         .gold-gradient-text {
             background: linear-gradient(135deg, #fff2a3 0%, #d4af37 50%, #aa7c11 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
         }
 
-        /* Glassmorphism */
         .glass-panel {
-            background: rgba(18, 12, 16, 0.85);
+            background: rgba(18, 12, 16, 0.88);
             backdrop-filter: blur(16px);
             border: 1px solid rgba(212, 175, 55, 0.3);
             box-shadow: 0 10px 35px rgba(0, 0, 0, 0.7);
         }
 
-        /* Custom Scrollbar */
         ::-webkit-scrollbar {
             width: 6px;
         }
@@ -113,7 +91,6 @@
 </head>
 <body class="font-sans antialiased text-gray-200 selection:bg-amber-500 selection:text-black">
 
-    <!-- Ambient Sparkles Container -->
     <div id="sparkles-container" class="fixed inset-0 pointer-events-none z-0"></div>
 
     <div class="relative z-10 max-w-5xl mx-auto px-4 py-8">
@@ -146,6 +123,10 @@
                 <a href="https://www.instagram.com/reel/DdMSPMRBEZL/" target="_blank" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-neutral-900/80 hover:bg-neutral-800 border border-amber-500/30 text-amber-200 transition">
                     <i data-lucide="video" class="w-3.5 h-3.5 text-amber-400"></i>
                     <span>پست مسابقه</span>
+                </a>
+                <a href="./export.xlsx" download class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-950/60 hover:bg-emerald-900/80 border border-emerald-500/40 text-emerald-200 transition">
+                    <i data-lucide="file-spreadsheet" class="w-3.5 h-3.5 text-emerald-400"></i>
+                    <span>دانلود فایل اکسل کامنت‌ها (نوین‌هاب)</span>
                 </a>
             </div>
         </header>
@@ -226,12 +207,39 @@
                         </div>
                     </div>
 
-                    <!-- Share / Certificate Actions -->
-                    <div class="mt-6 flex flex-wrap gap-2 justify-center">
-                        <button onclick="downloadResultsScreenshot()" class="px-4 py-2 rounded-lg bg-amber-950/70 hover:bg-amber-900 border border-amber-500/40 text-amber-300 text-xs font-semibold flex items-center gap-1.5 transition">
-                            <i data-lucide="copy" class="w-3.5 h-3.5"></i>
-                            <span>کپی متن تبریک به برنده</span>
-                        </button>
+                    <!-- Story Image Preview & Download Generator -->
+                    <div class="mt-8 pt-6 border-t border-amber-500/30">
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="flex items-center gap-2">
+                                <i data-lucide="image" class="w-5 h-5 text-amber-400"></i>
+                                <h4 class="font-bold text-amber-200 text-sm">پوستر استوری اختصاصی اینستاگرام (1080x1920)</h4>
+                            </div>
+                            <button onclick="downloadStoryImage()" class="px-3.5 py-1.5 rounded-lg bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 hover:to-yellow-300 text-black text-xs font-bold flex items-center gap-1.5 shadow-md transition">
+                                <i data-lucide="download" class="w-4 h-4"></i>
+                                <span>دانلود تصویر استوری</span>
+                            </button>
+                        </div>
+                        
+                        <!-- Story Canvas Preview (Scaled down for display) -->
+                        <div class="flex flex-col sm:flex-row items-center gap-4 bg-black/50 p-4 rounded-xl border border-amber-500/20">
+                            <div class="w-36 h-64 rounded-lg overflow-hidden border border-amber-500/50 shadow-lg flex-shrink-0 relative bg-neutral-950">
+                                <canvas id="story-canvas" width="1080" height="1920" class="w-full h-full object-contain"></canvas>
+                            </div>
+                            <div class="text-xs text-gray-300 space-y-2 flex-1">
+                                <p class="font-semibold text-amber-300">✨ تصویر استوری رسمی تولید شد!</p>
+                                <p class="text-gray-400">این تصویر با نسبت استاندارد 9:16 و ابعاد ۱۰۸۰×۱۹۲۰ پیکسلی طراحی شده و آماده انتشار در استوری اینستاگرام برای اعلام نتیجه است.</p>
+                                <div class="pt-2 flex flex-wrap gap-2">
+                                    <button onclick="downloadStoryImage()" class="px-3 py-1.5 rounded bg-amber-950 border border-amber-500/40 text-amber-200 text-xs font-medium hover:bg-amber-900 transition flex items-center gap-1">
+                                        <i data-lucide="download" class="w-3.5 h-3.5"></i>
+                                        <span>ذخیره در گالری</span>
+                                    </button>
+                                    <button onclick="copyResultText()" class="px-3 py-1.5 rounded bg-neutral-800 border border-neutral-700 text-gray-200 text-xs font-medium hover:bg-neutral-700 transition flex items-center gap-1">
+                                        <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+                                        <span>کپی کپشن</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -245,29 +253,34 @@
                     <div class="flex items-center justify-between mb-3">
                         <div class="flex items-center gap-2">
                             <i data-lucide="scroll" class="w-5 h-5 text-amber-400"></i>
-                            <h3 class="font-bold text-amber-100 text-sm sm:text-base">لیست شرکت‌کنندگان</h3>
+                            <h3 class="font-bold text-amber-100 text-sm sm:text-base">لیست شرکت‌کنندگان (نوین‌هاب)</h3>
                         </div>
                         <span id="participants-count-badge" class="px-2.5 py-0.5 rounded-full bg-amber-950/80 border border-amber-500/40 text-amber-300 text-xs font-bold">
-                            ۰ نفر
+                            ۱۱۷ نفر
                         </span>
                     </div>
 
                     <p class="text-xs text-gray-400 mb-3 leading-normal">
-                        اسامی یا آیدی‌های اینستاگرام را در کادر زیر وارد کنید (هر خط یک نفر) یا از دکمه‌های بارگذاری استفاده نمایید.
+                        اطلاعات ۱۱۷ کامنت مسابقه اینستاگرام از فایل نوین‌هاب لود شده است. می‌توانید فایل جدیدی آپلود کنید یا لیست را تغییر دهید:
                     </p>
 
                     <!-- Text Area Input -->
-                    <textarea id="participants-input" rows="8" placeholder="@username1&#10;@username2&#10;علی اکبری&#10;مریم رضایی" class="w-full bg-black/60 border border-amber-500/30 rounded-xl p-3 text-sm text-gray-200 placeholder-gray-600 focus:outline-none focus:border-amber-400 font-mono resize-y"></textarea>
+                    <textarea id="participants-input" rows="8" placeholder="@username1&#10;@username2" class="w-full bg-black/60 border border-amber-500/30 rounded-xl p-3 text-sm text-gray-200 placeholder-gray-600 focus:outline-none focus:border-amber-400 font-mono resize-y"></textarea>
 
                     <!-- Actions Row -->
                     <div class="flex flex-wrap gap-2 mt-3">
-                        <button onclick="loadSampleData()" class="px-3 py-1.5 rounded-lg bg-neutral-900 hover:bg-neutral-800 border border-neutral-700 text-xs text-gray-300 transition flex items-center gap-1">
-                            <i data-lucide="wand-2" class="w-3.5 h-3.5 text-amber-400"></i>
-                            <span>لیست نمونه</span>
+                        <label class="cursor-pointer px-3 py-1.5 rounded-lg bg-emerald-950/80 hover:bg-emerald-900 border border-emerald-500/50 text-xs text-emerald-300 transition flex items-center gap-1">
+                            <i data-lucide="upload" class="w-3.5 h-3.5"></i>
+                            <span>آپلود فایل نوین‌هاب (xlsx/csv)</span>
+                            <input type="file" id="file-upload" accept=".xlsx, .xls, .csv" class="hidden" onchange="handleFileUpload(event)">
+                        </label>
+                        <button onclick="loadDefaultNovinHubData()" class="px-3 py-1.5 rounded-lg bg-neutral-900 hover:bg-neutral-800 border border-neutral-700 text-xs text-gray-300 transition flex items-center gap-1">
+                            <i data-lucide="rotate-ccw" class="w-3.5 h-3.5 text-amber-400"></i>
+                            <span>بازیابی داده‌های اصلی</span>
                         </button>
                         <button onclick="shuffleList()" class="px-3 py-1.5 rounded-lg bg-neutral-900 hover:bg-neutral-800 border border-neutral-700 text-xs text-gray-300 transition flex items-center gap-1">
                             <i data-lucide="shuffle" class="w-3.5 h-3.5 text-amber-400"></i>
-                            <span>بُر زدن لیست</span>
+                            <span>بُر زدن</span>
                         </button>
                         <button onclick="cleanList()" class="px-3 py-1.5 rounded-lg bg-neutral-900 hover:bg-neutral-800 border border-neutral-700 text-xs text-gray-300 transition flex items-center gap-1">
                             <i data-lucide="filter" class="w-3.5 h-3.5 text-amber-400"></i>
@@ -288,10 +301,10 @@
                     
                     <div id="secret-panel" class="hidden mt-4 pt-3 border-t border-purple-900/40 space-y-3 text-xs">
                         <p class="text-gray-400 leading-relaxed">
-                            در صورت تمایل می‌توانید نام برنده اول را در کادر زیر مشخص کنید تا گردونه به صورت کاملاً طبیعی پس از چرخش روی این فرد متوقف شود:
+                            در صورت تمایل می‌توانید آیدی برنده را در کادر زیر مشخص کنید تا گردونه به صورت کاملاً طبیعی پس از چرخش روی این فرد متوقف شود:
                         </p>
                         <div class="flex gap-2">
-                            <input id="forced-winner" type="text" placeholder="مثال: @special_guest" class="flex-1 bg-black/60 border border-purple-800/40 rounded-lg px-3 py-2 text-xs text-purple-200 placeholder-gray-600 focus:outline-none focus:border-purple-500">
+                            <input id="forced-winner" type="text" placeholder="مثال: @ziiboox" class="flex-1 bg-black/60 border border-purple-800/40 rounded-lg px-3 py-2 text-xs text-purple-200 placeholder-gray-600 focus:outline-none focus:border-purple-500">
                         </div>
                     </div>
                 </div>
@@ -317,12 +330,30 @@
 
     </div>
 
-    <!-- Audio Effects (Web Audio API Synthesized Magic Sounds) -->
+    <!-- Script Application Logic -->
     <script>
-        // Init Lucide Icons
         lucide.createIcons();
 
-        // Audio Context for synthetic magical sounds
+        // Ambient Sparkles
+        function createAmbientSparkles() {
+            const container = document.getElementById('sparkles-container');
+            for (let i = 0; i < 25; i++) {
+                const sparkle = document.createElement('div');
+                sparkle.className = 'absolute rounded-full pointer-events-none';
+                const size = Math.random() * 3 + 1;
+                sparkle.style.width = `${size}px`;
+                sparkle.style.height = `${size}px`;
+                sparkle.style.backgroundColor = Math.random() > 0.4 ? '#d4af37' : '#ffffff';
+                sparkle.style.left = `${Math.random() * 100}%`;
+                sparkle.style.top = `${Math.random() * 100}%`;
+                sparkle.style.opacity = Math.random() * 0.7 + 0.2;
+                sparkle.style.animation = `float ${Math.random() * 4 + 3}s ease-in-out infinite`;
+                container.appendChild(sparkle);
+            }
+        }
+        createAmbientSparkles();
+
+        // Audio Context for magic sound effects
         const AudioContext = window.AudioContext || window.webkitAudioContext;
         let audioCtx = null;
 
@@ -350,7 +381,7 @@
         function playFanfareSound() {
             try {
                 initAudio();
-                const notes = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6
+                const notes = [523.25, 659.25, 783.99, 1046.50];
                 notes.forEach((freq, idx) => {
                     setTimeout(() => {
                         const osc = audioCtx.createOscillator();
@@ -367,25 +398,6 @@
                 });
             } catch (e) {}
         }
-
-        // Setup Ambient Floating Stars / Sparkles
-        function createAmbientSparkles() {
-            const container = document.getElementById('sparkles-container');
-            for (let i = 0; i < 25; i++) {
-                const sparkle = document.createElement('div');
-                sparkle.className = 'absolute rounded-full pointer-events-none';
-                const size = Math.random() * 3 + 1;
-                sparkle.style.width = `${size}px`;
-                sparkle.style.height = `${size}px`;
-                sparkle.style.backgroundColor = Math.random() > 0.4 ? '#d4af37' : '#ffffff';
-                sparkle.style.left = `${Math.random() * 100}%`;
-                sparkle.style.top = `${Math.random() * 100}%`;
-                sparkle.style.opacity = Math.random() * 0.7 + 0.2;
-                sparkle.style.animation = `float ${Math.random() * 4 + 3}s ease-in-out infinite`;
-                container.appendChild(sparkle);
-            }
-        }
-        createAmbientSparkles();
 
         // App State
         let isDrawing = false;
@@ -416,20 +428,52 @@
             arrow.classList.toggle('rotate-180');
         }
 
-        function loadSampleData() {
-            inputArea.value = [
-                '@sara_potterhead',
-                '@ali.reza.m',
-                '@niloufar_hp',
-                '@mohammad_gh',
-                '@zahra.k',
-                '@mahdi_tehrani',
-                '@fatemeh_art',
-                '@amir_cinema',
-                '@hedwig_fan',
-                '@hogwarts_iran'
-            ].join('\n');
-            updateCount();
+        // Load participants from JSON
+        async function loadDefaultNovinHubData() {
+            try {
+                const res = await fetch('./participants.json');
+                const data = await res.json();
+                inputArea.value = data.map(d => d.username).join('\n');
+                updateCount();
+            } catch (e) {
+                console.error(e);
+            }
+        }
+        loadDefaultNovinHubData();
+
+        function handleFileUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
+                const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                const rows = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
+
+                let extracted = [];
+                // Check format
+                for (let i = 1; i < rows.length; i++) {
+                    const r = rows[i];
+                    if (!r) continue;
+                    let username = r[2] || r[0]; // NovinHub format usually has user in col 2 or 0
+                    if (username) {
+                        let u = String(username).trim();
+                        if (!u.startsWith('@') && !u.startsWith('http')) u = '@' + u;
+                        extracted.push(u);
+                    }
+                }
+
+                if (extracted.length > 0) {
+                    inputArea.value = extracted.join('\n');
+                    updateCount();
+                    alert(`تعداد ${extracted.length} شرکت‌کننده با موفقیت از فایل نوین‌هاب بارگذاری شد.`);
+                } else {
+                    alert('خطا در خواندن فایل اکسل. لطفاً ساختار فایل را بررسی کنید.');
+                }
+            };
+            reader.readAsArrayBuffer(file);
         }
 
         function shuffleList() {
@@ -471,25 +515,23 @@
             document.getElementById('btn-draw').classList.add('opacity-50', 'cursor-not-allowed');
             document.getElementById('results-card').classList.add('hidden');
 
-            const forced = document.getElementById('forced-winner').value.trim();
+            let forced = document.getElementById('forced-winner').value.trim();
+            if (forced && !forced.startsWith('@')) forced = '@' + forced;
 
             let pool = [...participants];
             let winners = [];
             let reserves = [];
 
-            // Handle forced winner if specified
             if (forced) {
                 winners.push(forced);
                 pool = pool.filter(p => p.toLowerCase() !== forced.toLowerCase());
             }
 
-            // Pick remaining winners
             while (winners.length < winCount && pool.length > 0) {
                 const idx = Math.floor(Math.random() * pool.length);
                 winners.push(pool.splice(idx, 1)[0]);
             }
 
-            // Pick reserves
             while (reserves.length < resCount && pool.length > 0) {
                 const idx = Math.floor(Math.random() * pool.length);
                 reserves.push(pool.splice(idx, 1)[0]);
@@ -498,7 +540,6 @@
             drawnWinners = winners;
             drawnReserves = reserves;
 
-            // Animate rolling effect
             let duration = 3500;
             let intervalTime = 60;
             let elapsed = 0;
@@ -522,34 +563,17 @@
             document.getElementById('btn-draw').disabled = false;
             document.getElementById('btn-draw').classList.remove('opacity-50', 'cursor-not-allowed');
 
-            // Play celebratory sound
             playFanfareSound();
 
-            // Fire Confetti!
             confetti({
                 particleCount: 120,
                 spread: 80,
                 origin: { y: 0.6 },
                 colors: ['#d4af37', '#740001', '#ffffff', '#ffd700']
             });
-            setTimeout(() => {
-                confetti({
-                    particleCount: 80,
-                    angle: 60,
-                    spread: 55,
-                    origin: { x: 0 },
-                    colors: ['#d4af37', '#740001', '#f3e5ab']
-                });
-                confetti({
-                    particleCount: 80,
-                    angle: 120,
-                    spread: 55,
-                    origin: { x: 1 },
-                    colors: ['#d4af37', '#740001', '#f3e5ab']
-                });
-            }, 300);
 
             renderResults();
+            generateStoryPoster(drawnWinners[0]);
         }
 
         function renderResults() {
@@ -610,12 +634,124 @@
             drawnReserves = [];
         }
 
-        function downloadResultsScreenshot() {
+        function copyResultText() {
             if (drawnWinners.length === 0) return;
-            const text = `🎉 تبریک به برنده مسابقه بلیت تئاتر هری پاتر!\n\n🏆 برنده اصلی: ${drawnWinners.join('، ')}\n${drawnReserves.length > 0 ? `👥 رزرو: ${drawnReserves.join('، ')}\n` : ''}\n📍 نمایش: تئاتر هری پاتر (تیوال: tiwall.com/p/harrypotter3)\n✨ برگزارکننده: نوشین ناصری (@noushinnaseri)`;
+            const text = `🎉 تبریک به برنده مسابقه بلیت تئاتر هری پاتر!\n\n🏆 برنده اصلی: ${drawnWinners.join('، ')}\n${drawnReserves.length > 0 ? `👥 رزرو: ${drawnReserves.join('، ')}\n` : ''}\n📍 نمایش: تئاتر هری پاتر\n✨ برگزارکننده: نوشین ناصری (@noushinnaseri)`;
             navigator.clipboard.writeText(text).then(() => {
                 alert('متن تبریک و اعلام برنده در کلیپ‌بورد کپی شد!');
             });
+        }
+
+        // Generate High-Res 1080x1920 Instagram Story Poster
+        function generateStoryPoster(winnerHandle) {
+            const canvas = document.getElementById('story-canvas');
+            const ctx = canvas.getContext('2d');
+            const W = 1080;
+            const H = 1920;
+
+            // Background Dark Magical Gradient
+            const bgGrad = ctx.createLinearGradient(0, 0, W, H);
+            bgGrad.addColorStop(0, '#0a080c');
+            bgGrad.addColorStop(0.3, '#1a0d14');
+            bgGrad.addColorStop(0.7, '#24080a');
+            bgGrad.addColorStop(1, '#08060a');
+            ctx.fillStyle = bgGrad;
+            ctx.fillRect(0, 0, W, H);
+
+            // Subtle Golden Dust / Stars
+            for (let i = 0; i < 120; i++) {
+                ctx.fillStyle = Math.random() > 0.5 ? 'rgba(212, 175, 55, 0.4)' : 'rgba(255, 255, 255, 0.3)';
+                const x = Math.random() * W;
+                const y = Math.random() * H;
+                const r = Math.random() * 3 + 1;
+                ctx.beginPath();
+                ctx.arc(x, y, r, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            // Ornate Gold Border
+            ctx.strokeStyle = '#d4af37';
+            ctx.lineWidth = 6;
+            ctx.strokeRect(50, 50, W - 100, H - 100);
+
+            ctx.strokeStyle = 'rgba(212, 175, 55, 0.4)';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(65, 65, W - 130, H - 130);
+
+            // Header Badge
+            ctx.fillStyle = '#d4af37';
+            ctx.font = 'bold 36px Vazirmatn, sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('⚡ مسابقه بزرگ اینستاگرام ⚡', W / 2, 220);
+
+            // Main Title
+            ctx.fillStyle = '#ffffff';
+            ctx.font = '900 68px Vazirmatn, sans-serif';
+            ctx.fillText('قرعه‌کشی بلیت تئاتر هری پاتر', W / 2, 330);
+
+            ctx.fillStyle = '#f3e5ab';
+            ctx.font = '500 36px Vazirmatn, sans-serif';
+            ctx.fillText('همراهی ویژه با نوشین ناصری', W / 2, 410);
+
+            // Center Trophy / Goblet Glow Circle
+            const glow = ctx.createRadialGradient(W / 2, 750, 50, W / 2, 750, 320);
+            glow.addColorStop(0, 'rgba(212, 175, 55, 0.35)');
+            glow.addColorStop(1, 'rgba(212, 175, 55, 0)');
+            ctx.fillStyle = glow;
+            ctx.fillRect(W / 2 - 350, 400, 700, 700);
+
+            // Winner Container Box
+            ctx.fillStyle = 'rgba(20, 10, 15, 0.85)';
+            ctx.strokeStyle = '#d4af37';
+            ctx.lineWidth = 4;
+            ctx.roundRect(140, 840, W - 280, 420, 30);
+            ctx.fill();
+            ctx.stroke();
+
+            // Winner Label
+            ctx.fillStyle = '#d4af37';
+            ctx.font = 'bold 40px Vazirmatn, sans-serif';
+            ctx.fillText('🏆 برنده خوش‌شانس مسابقه 🏆', W / 2, 940);
+
+            // Winner Username (Big & Bold)
+            ctx.fillStyle = '#ffffff';
+            ctx.font = '900 64px Vazirmatn, sans-serif';
+            ctx.fillText(winnerHandle || '@winner', W / 2, 1060);
+
+            ctx.fillStyle = '#e5e7eb';
+            ctx.font = '400 32px Vazirmatn, sans-serif';
+            ctx.fillText('تبریک! شما برنده حضور در تئاتر شدید 🎟️✨', W / 2, 1170);
+
+            // Play & Ticket Details Box
+            ctx.fillStyle = 'rgba(116, 0, 1, 0.4)';
+            ctx.strokeStyle = 'rgba(212, 175, 55, 0.5)';
+            ctx.lineWidth = 2;
+            ctx.roundRect(140, 1340, W - 280, 260, 20);
+            ctx.fill();
+            ctx.stroke();
+
+            ctx.fillStyle = '#f3e5ab';
+            ctx.font = 'bold 36px Vazirmatn, sans-serif';
+            ctx.fillText('🎭 تئاتر هری پاتر و فرزند نفرین‌شده', W / 2, 1420);
+
+            ctx.fillStyle = '#cbd5e1';
+            ctx.font = '400 30px Vazirmatn, sans-serif';
+            ctx.fillText('تهیه بلیت از سامانه رسمی تیوال', W / 2, 1490);
+            ctx.fillText('instagram.com/harrypottertheatre', W / 2, 1545);
+
+            // Footer
+            ctx.fillStyle = '#9ca3af';
+            ctx.font = '400 28px Vazirmatn, sans-serif';
+            ctx.fillText('نوشین ناصری | Nooshin Naseri', W / 2, 1760);
+        }
+
+        function downloadStoryImage() {
+            const canvas = document.getElementById('story-canvas');
+            const link = document.createElement('a');
+            const winner = drawnWinners[0] || 'winner';
+            link.download = `story-winner-${winner.replace('@', '')}.png`;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
         }
     </script>
 </body>
