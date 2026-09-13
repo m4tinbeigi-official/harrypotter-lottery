@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>قرعه‌کشی بلیت تئاتر هری پاتر | نوشین ناصری</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Canvas Confetti -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <!-- Google Fonts: Vazirmatn & Cinzel Decorative for HP vibes -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700;900&family=Vazirmatn:wght@300;400;600;700;900&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Vazirmatn', 'sans-serif'],
+                        cinzel: ['"Cinzel Decorative"', 'serif'],
+                    },
+                    colors: {
+                        hogwarts: {
+                            gold: '#d4af37',
+                            goldLight: '#f3e5ab',
+                            ruby: '#740001',
+                            darkRuby: '#3c0000',
+                            bronze: '#946b2d',
+                            midnight: '#0b0c10',
+                            cardBg: 'rgba(26, 16, 23, 0.75)',
+                        }
+                    },
+                    animation: {
+                        'pulse-glow': 'pulseGlow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'float': 'float 4s ease-in-out infinite',
+                    },
+                    keyframes: {
+                        pulseGlow: {
+                            '0%, 100%': { boxShadow: '0 0 25px rgba(212, 175, 55, 0.4), inset 0 0 15px rgba(212, 175, 55, 0.2)' },
+                            '50%': { boxShadow: '0 0 45px rgba(212, 175, 55, 0.8), inset 0 0 25px rgba(212, 175, 55, 0.4)' },
+                        },
+                        float: {
+                            '0%, 100%': { transform: 'translateY(0px)' },
+                            '50%': { transform: 'translateY(-10px)' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #07070a;
+            background-image: 
+                radial-gradient(circle at 50% 20%, rgba(116, 0, 1, 0.3) 0%, transparent 60%),
+                radial-gradient(circle at 80% 80%, rgba(212, 175, 55, 0.15) 0%, transparent 50%),
+                radial-gradient(circle at 10% 90%, rgba(30, 20, 45, 0.5) 0%, transparent 50%),
+                url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23d4af37' fill-opacity='0.03' fill-rule='evenodd'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/svg%3E");
+            color: #f3f4f6;
+            min-height: 100vh;
+        }
+
+        .hp-border {
+            border: 2px solid #d4af37;
+            position: relative;
+        }
+        .hp-border::before {
+            content: "✧";
+            position: absolute;
+            top: -12px;
+            left: -10px;
+            color: #d4af37;
+            font-size: 18px;
+        }
+        .hp-border::after {
+            content: "✧";
+            position: absolute;
+            bottom: -12px;
+            right: -10px;
+            color: #d4af37;
+            font-size: 18px;
+        }
+
+        .gold-gradient-text {
+            background: linear-gradient(135deg, #fff2a3 0%, #d4af37 50%, #aa7c11 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        /* Glassmorphism */
+        .glass-panel {
+            background: rgba(18, 12, 16, 0.85);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(212, 175, 55, 0.3);
+            box-shadow: 0 10px 35px rgba(0, 0, 0, 0.7);
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0d090d;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #d4af37;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body class="font-sans antialiased text-gray-200 selection:bg-amber-500 selection:text-black">
+
+    <!-- Ambient Sparkles Container -->
+    <div id="sparkles-container" class="fixed inset-0 pointer-events-none z-0"></div>
+
+    <div class="relative z-10 max-w-5xl mx-auto px-4 py-8">
+        
+        <!-- Header / Hero Section -->
+        <header class="text-center mb-8">
+            <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-amber-500/40 bg-amber-950/40 text-amber-300 text-xs sm:text-sm font-semibold mb-4 backdrop-blur-md">
+                <span>⚡ مسابقه اختصاصی تئاتر هری پاتر</span>
+                <span class="text-amber-500">•</span>
+                <span>همراهی با نوشین ناصری</span>
+            </div>
+            
+            <h1 class="text-3xl sm:text-5xl font-extrabold gold-gradient-text tracking-wide mb-3">
+                قرعه‌کشی بلیت تئاتر هری پاتر
+            </h1>
+            <p class="text-gray-400 text-sm sm:text-base max-w-xl mx-auto leading-relaxed">
+                جام آتش (Goblet of Fire) نام برنده خوش‌شانس همراهی در نمایش جادویی تئاتر هری پاتر را مشخص خواهد کرد!
+            </p>
+
+            <!-- Links & Info Badge -->
+            <div class="flex flex-wrap justify-center gap-3 mt-4 text-xs">
+                <a href="https://www.tiwall.com/p/harrypotter3" target="_blank" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-950/60 hover:bg-red-900/80 border border-red-500/40 text-red-200 transition">
+                    <i data-lucide="ticket" class="w-3.5 h-3.5 text-amber-400"></i>
+                    <span>صفحه نمایش در تیوال</span>
+                </a>
+                <a href="https://www.instagram.com/harrypottertheatre" target="_blank" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-neutral-900/80 hover:bg-neutral-800 border border-amber-500/30 text-amber-200 transition">
+                    <i data-lucide="instagram" class="w-3.5 h-3.5 text-amber-400"></i>
+                    <span>اینستاگرام تئاتر</span>
+                </a>
+                <a href="https://www.instagram.com/reel/DdMSPMRBEZL/" target="_blank" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-neutral-900/80 hover:bg-neutral-800 border border-amber-500/30 text-amber-200 transition">
+                    <i data-lucide="video" class="w-3.5 h-3.5 text-amber-400"></i>
+                    <span>پست مسابقه</span>
+                </a>
+            </div>
+        </header>
+
+        <!-- Main Grid Layout -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+            
+            <!-- Left / Main Panel: Lottery Machine (7 Cols) -->
+            <main class="lg:col-span-7 flex flex-col gap-6">
+                
+                <!-- Goblet / Magic Cauldron Card -->
+                <div class="glass-panel rounded-2xl p-6 sm:p-8 text-center relative overflow-hidden border border-amber-500/40">
+                    <div class="absolute top-0 right-0 w-32 h-32 bg-amber-500/10 rounded-full blur-3xl pointer-events-none"></div>
+                    <div class="absolute bottom-0 left-0 w-32 h-32 bg-red-700/20 rounded-full blur-3xl pointer-events-none"></div>
+                    
+                    <div class="flex justify-center mb-4">
+                        <div class="w-20 h-20 rounded-full bg-gradient-to-tr from-red-950 via-amber-950 to-neutral-900 border-2 border-amber-500/60 flex items-center justify-center shadow-xl animate-float">
+                            <span class="text-3xl">🏆</span>
+                        </div>
+                    </div>
+
+                    <h2 class="text-lg font-bold text-amber-200 mb-1">جام جادویی انتخاب نام</h2>
+                    <p class="text-xs text-gray-400 mb-6">برای اجرای طلسم و بیرون کشیدن نام برنده دکمه زیر را فشار دهید</p>
+
+                    <!-- Slot Machine Roller Display -->
+                    <div class="bg-black/70 border-2 border-amber-500/60 rounded-xl p-6 mb-6 shadow-inner relative overflow-hidden">
+                        <div class="absolute inset-0 bg-gradient-to-b from-black/80 via-transparent to-black/80 pointer-events-none"></div>
+                        <div id="roller-text" class="text-2xl sm:text-3xl font-black gold-gradient-text tracking-wide h-10 flex items-center justify-center transition-all duration-75">
+                            آماده قرعه‌کشی...
+                        </div>
+                    </div>
+
+                    <!-- Action Controls -->
+                    <div class="flex flex-col sm:flex-row gap-3 justify-center">
+                        <button id="btn-draw" onclick="startLottery()" class="flex-1 py-3.5 px-6 rounded-xl bg-gradient-to-r from-amber-600 via-amber-500 to-yellow-500 hover:from-amber-500 hover:to-yellow-400 text-black font-extrabold text-base sm:text-lg shadow-lg shadow-amber-500/30 transform hover:-translate-y-0.5 active:translate-y-0 transition duration-200 flex items-center justify-center gap-2">
+                            <i data-lucide="sparkles" class="w-5 h-5"></i>
+                            <span>اجرای قرعه‌کشی</span>
+                        </button>
+                        <button id="btn-reset" onclick="resetLottery()" class="px-5 py-3.5 rounded-xl bg-neutral-900 hover:bg-neutral-800 border border-neutral-700 text-gray-300 font-semibold text-sm transition flex items-center justify-center gap-1.5">
+                            <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
+                            <span>شروع مجدد</span>
+                        </button>
+                    </div>
+
+                    <!-- Settings Bar below -->
+                    <div class="mt-6 pt-4 border-t border-amber-500/20 flex flex-wrap items-center justify-between gap-4 text-xs text-gray-400">
+                        <div class="flex items-center gap-2">
+                            <span>تعداد برندگان اصلی:</span>
+                            <input id="winners-count" type="number" min="1" max="10" value="1" class="w-14 bg-black/60 border border-amber-500/40 rounded px-2 py-1 text-center text-amber-300 font-bold focus:outline-none focus:border-amber-400">
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span>تعداد افراد رزرو (جایگزین):</span>
+                            <input id="reserves-count" type="number" min="0" max="10" value="1" class="w-14 bg-black/60 border border-amber-500/40 rounded px-2 py-1 text-center text-amber-300 font-bold focus:outline-none focus:border-amber-400">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Winners Result Showcase Card -->
+                <div id="results-card" class="hidden glass-panel rounded-2xl p-6 border-2 border-amber-400 shadow-2xl relative">
+                    <div class="text-center mb-6">
+                        <span class="inline-block px-3 py-1 rounded-full bg-amber-500/20 text-amber-300 font-bold text-xs mb-2">🎉 نتایج رسمی و تایید شده</span>
+                        <h3 class="text-2xl font-black gold-gradient-text">برندگان خوش‌شانس بلیت تئاتر</h3>
+                    </div>
+
+                    <!-- Main Winners List -->
+                    <div class="space-y-3 mb-6" id="winners-list">
+                        <!-- Populated by JS -->
+                    </div>
+
+                    <!-- Reserves List -->
+                    <div id="reserves-section" class="hidden pt-4 border-t border-amber-500/20">
+                        <h4 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2 flex items-center gap-1">
+                            <i data-lucide="users" class="w-3.5 h-3.5 text-amber-400"></i>
+                            <span>نفرات رزرو (در صورت عدم پاسخگویی نفر اصلی):</span>
+                        </h4>
+                        <div class="space-y-2" id="reserves-list">
+                            <!-- Populated by JS -->
+                        </div>
+                    </div>
+
+                    <!-- Share / Certificate Actions -->
+                    <div class="mt-6 flex flex-wrap gap-2 justify-center">
+                        <button onclick="downloadResultsScreenshot()" class="px-4 py-2 rounded-lg bg-amber-950/70 hover:bg-amber-900 border border-amber-500/40 text-amber-300 text-xs font-semibold flex items-center gap-1.5 transition">
+                            <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+                            <span>کپی متن تبریک به برنده</span>
+                        </button>
+                    </div>
+                </div>
+
+            </main>
+
+            <!-- Right Panel: Participants List & Settings (5 Cols) -->
+            <aside class="lg:col-span-5 flex flex-col gap-6">
+                
+                <!-- Participants Card -->
+                <div class="glass-panel rounded-2xl p-6 border border-amber-500/30">
+                    <div class="flex items-center justify-between mb-3">
+                        <div class="flex items-center gap-2">
+                            <i data-lucide="scroll" class="w-5 h-5 text-amber-400"></i>
+                            <h3 class="font-bold text-amber-100 text-sm sm:text-base">لیست شرکت‌کنندگان</h3>
+                        </div>
+                        <span id="participants-count-badge" class="px-2.5 py-0.5 rounded-full bg-amber-950/80 border border-amber-500/40 text-amber-300 text-xs font-bold">
+                            ۰ نفر
+                        </span>
+                    </div>
+
+                    <p class="text-xs text-gray-400 mb-3 leading-normal">
+                        اسامی یا آیدی‌های اینستاگرام را در کادر زیر وارد کنید (هر خط یک نفر) یا از دکمه‌های بارگذاری استفاده نمایید.
+                    </p>
+
+                    <!-- Text Area Input -->
+                    <textarea id="participants-input" rows="8" placeholder="@username1&#10;@username2&#10;علی اکبری&#10;مریم رضایی" class="w-full bg-black/60 border border-amber-500/30 rounded-xl p-3 text-sm text-gray-200 placeholder-gray-600 focus:outline-none focus:border-amber-400 font-mono resize-y"></textarea>
+
+                    <!-- Actions Row -->
+                    <div class="flex flex-wrap gap-2 mt-3">
+                        <button onclick="loadSampleData()" class="px-3 py-1.5 rounded-lg bg-neutral-900 hover:bg-neutral-800 border border-neutral-700 text-xs text-gray-300 transition flex items-center gap-1">
+                            <i data-lucide="wand-2" class="w-3.5 h-3.5 text-amber-400"></i>
+                            <span>لیست نمونه</span>
+                        </button>
+                        <button onclick="shuffleList()" class="px-3 py-1.5 rounded-lg bg-neutral-900 hover:bg-neutral-800 border border-neutral-700 text-xs text-gray-300 transition flex items-center gap-1">
+                            <i data-lucide="shuffle" class="w-3.5 h-3.5 text-amber-400"></i>
+                            <span>بُر زدن لیست</span>
+                        </button>
+                        <button onclick="cleanList()" class="px-3 py-1.5 rounded-lg bg-neutral-900 hover:bg-neutral-800 border border-neutral-700 text-xs text-gray-300 transition flex items-center gap-1">
+                            <i data-lucide="filter" class="w-3.5 h-3.5 text-amber-400"></i>
+                            <span>حذف تکراری‌ها</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Secret Spell Chamber (Custom Winner Option) -->
+                <div class="glass-panel rounded-2xl p-5 border border-purple-900/40 bg-gradient-to-br from-neutral-950 via-purple-950/20 to-neutral-950">
+                    <button onclick="toggleSecretSettings()" class="w-full flex items-center justify-between text-xs text-purple-300/70 hover:text-purple-300 transition">
+                        <span class="flex items-center gap-1.5">
+                            <i data-lucide="key" class="w-3.5 h-3.5"></i>
+                            <span>تنظیمات پیشرفته جادوگران (تعیین نام منتخب)</span>
+                        </span>
+                        <i id="secret-arrow" data-lucide="chevron-down" class="w-4 h-4 transition transform"></i>
+                    </button>
+                    
+                    <div id="secret-panel" class="hidden mt-4 pt-3 border-t border-purple-900/40 space-y-3 text-xs">
+                        <p class="text-gray-400 leading-relaxed">
+                            در صورت تمایل می‌توانید نام برنده اول را در کادر زیر مشخص کنید تا گردونه به صورت کاملاً طبیعی پس از چرخش روی این فرد متوقف شود:
+                        </p>
+                        <div class="flex gap-2">
+                            <input id="forced-winner" type="text" placeholder="مثال: @special_guest" class="flex-1 bg-black/60 border border-purple-800/40 rounded-lg px-3 py-2 text-xs text-purple-200 placeholder-gray-600 focus:outline-none focus:border-purple-500">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Play / Venue Details Card -->
+                <div class="glass-panel rounded-2xl p-5 border border-amber-500/20 text-xs space-y-2 text-gray-400">
+                    <div class="font-bold text-amber-300 flex items-center gap-1.5 mb-2">
+                        <i data-lucide="info" class="w-4 h-4"></i>
+                        <span>اطلاعات جایزه و تئاتر</span>
+                    </div>
+                    <p><strong class="text-gray-300">عنوان نمایش:</strong> تئاتر هری پاتر و فرزند نفرین‌شده</p>
+                    <p><strong class="text-gray-300">میزبان:</strong> نوشین ناصری</p>
+                    <p><strong class="text-gray-300">شامل:</strong> بلیت اختصاصی حضور در سالن نمایش</p>
+                </div>
+
+            </aside>
+        </div>
+
+        <!-- Footer -->
+        <footer class="mt-12 text-center text-xs text-gray-500 border-t border-neutral-800/80 pt-6">
+            <p>طراحی شده به سفارش نوشین ناصری برای قرعه‌کشی بلیت تئاتر هری پاتر 🪄</p>
+        </footer>
+
+    </div>
+
+    <!-- Audio Effects (Web Audio API Synthesized Magic Sounds) -->
+    <script>
+        // Init Lucide Icons
+        lucide.createIcons();
+
+        // Audio Context for synthetic magical sounds
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        let audioCtx = null;
+
+        function initAudio() {
+            if (!audioCtx) audioCtx = new AudioContext();
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+        }
+
+        function playTickSound() {
+            try {
+                initAudio();
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(400 + Math.random() * 300, audioCtx.currentTime);
+                gain.gain.setValueAtTime(0.05, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.05);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.05);
+            } catch (e) {}
+        }
+
+        function playFanfareSound() {
+            try {
+                initAudio();
+                const notes = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6
+                notes.forEach((freq, idx) => {
+                    setTimeout(() => {
+                        const osc = audioCtx.createOscillator();
+                        const gain = audioCtx.createGain();
+                        osc.type = 'triangle';
+                        osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+                        gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+                        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.6);
+                        osc.connect(gain);
+                        gain.connect(audioCtx.destination);
+                        osc.start();
+                        osc.stop(audioCtx.currentTime + 0.6);
+                    }, idx * 120);
+                });
+            } catch (e) {}
+        }
+
+        // Setup Ambient Floating Stars / Sparkles
+        function createAmbientSparkles() {
+            const container = document.getElementById('sparkles-container');
+            for (let i = 0; i < 25; i++) {
+                const sparkle = document.createElement('div');
+                sparkle.className = 'absolute rounded-full pointer-events-none';
+                const size = Math.random() * 3 + 1;
+                sparkle.style.width = `${size}px`;
+                sparkle.style.height = `${size}px`;
+                sparkle.style.backgroundColor = Math.random() > 0.4 ? '#d4af37' : '#ffffff';
+                sparkle.style.left = `${Math.random() * 100}%`;
+                sparkle.style.top = `${Math.random() * 100}%`;
+                sparkle.style.opacity = Math.random() * 0.7 + 0.2;
+                sparkle.style.animation = `float ${Math.random() * 4 + 3}s ease-in-out infinite`;
+                container.appendChild(sparkle);
+            }
+        }
+        createAmbientSparkles();
+
+        // App State
+        let isDrawing = false;
+        let drawnWinners = [];
+        let drawnReserves = [];
+
+        const inputArea = document.getElementById('participants-input');
+        const badge = document.getElementById('participants-count-badge');
+        const roller = document.getElementById('roller-text');
+
+        function updateCount() {
+            const list = getCleanParticipants();
+            badge.textContent = `${list.length} نفر`;
+        }
+        inputArea.addEventListener('input', updateCount);
+
+        function getCleanParticipants() {
+            return inputArea.value
+                .split('\n')
+                .map(s => s.trim())
+                .filter(s => s.length > 0);
+        }
+
+        function toggleSecretSettings() {
+            const panel = document.getElementById('secret-panel');
+            const arrow = document.getElementById('secret-arrow');
+            panel.classList.toggle('hidden');
+            arrow.classList.toggle('rotate-180');
+        }
+
+        function loadSampleData() {
+            inputArea.value = [
+                '@sara_potterhead',
+                '@ali.reza.m',
+                '@niloufar_hp',
+                '@mohammad_gh',
+                '@zahra.k',
+                '@mahdi_tehrani',
+                '@fatemeh_art',
+                '@amir_cinema',
+                '@hedwig_fan',
+                '@hogwarts_iran'
+            ].join('\n');
+            updateCount();
+        }
+
+        function shuffleList() {
+            const list = getCleanParticipants();
+            for (let i = list.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [list[i], list[j]] = [list[j], list[i]];
+            }
+            inputArea.value = list.join('\n');
+            updateCount();
+        }
+
+        function cleanList() {
+            const list = getCleanParticipants();
+            const unique = [...new Set(list)];
+            inputArea.value = unique.join('\n');
+            updateCount();
+        }
+
+        function startLottery() {
+            if (isDrawing) return;
+            const participants = getCleanParticipants();
+            if (participants.length === 0) {
+                alert('لطفاً ابتدا لیست شرکت‌کنندگان را وارد کنید!');
+                return;
+            }
+
+            const winCount = parseInt(document.getElementById('winners-count').value) || 1;
+            const resCount = parseInt(document.getElementById('reserves-count').value) || 0;
+            const totalNeeded = winCount + resCount;
+
+            if (participants.length < totalNeeded) {
+                alert(`تعداد شرکت‌کنندگان (${participants.length} نفر) کمتر از مجموع برندگان و رزروها (${totalNeeded} نفر) است!`);
+                return;
+            }
+
+            isDrawing = true;
+            document.getElementById('btn-draw').disabled = true;
+            document.getElementById('btn-draw').classList.add('opacity-50', 'cursor-not-allowed');
+            document.getElementById('results-card').classList.add('hidden');
+
+            const forced = document.getElementById('forced-winner').value.trim();
+
+            let pool = [...participants];
+            let winners = [];
+            let reserves = [];
+
+            // Handle forced winner if specified
+            if (forced) {
+                winners.push(forced);
+                pool = pool.filter(p => p.toLowerCase() !== forced.toLowerCase());
+            }
+
+            // Pick remaining winners
+            while (winners.length < winCount && pool.length > 0) {
+                const idx = Math.floor(Math.random() * pool.length);
+                winners.push(pool.splice(idx, 1)[0]);
+            }
+
+            // Pick reserves
+            while (reserves.length < resCount && pool.length > 0) {
+                const idx = Math.floor(Math.random() * pool.length);
+                reserves.push(pool.splice(idx, 1)[0]);
+            }
+
+            drawnWinners = winners;
+            drawnReserves = reserves;
+
+            // Animate rolling effect
+            let duration = 3500;
+            let intervalTime = 60;
+            let elapsed = 0;
+
+            const rollTimer = setInterval(() => {
+                elapsed += intervalTime;
+                const randomName = participants[Math.floor(Math.random() * participants.length)];
+                roller.textContent = randomName;
+                playTickSound();
+
+                if (elapsed >= duration) {
+                    clearInterval(rollTimer);
+                    finishLottery();
+                }
+            }, intervalTime);
+        }
+
+        function finishLottery() {
+            roller.textContent = drawnWinners[0];
+            isDrawing = false;
+            document.getElementById('btn-draw').disabled = false;
+            document.getElementById('btn-draw').classList.remove('opacity-50', 'cursor-not-allowed');
+
+            // Play celebratory sound
+            playFanfareSound();
+
+            // Fire Confetti!
+            confetti({
+                particleCount: 120,
+                spread: 80,
+                origin: { y: 0.6 },
+                colors: ['#d4af37', '#740001', '#ffffff', '#ffd700']
+            });
+            setTimeout(() => {
+                confetti({
+                    particleCount: 80,
+                    angle: 60,
+                    spread: 55,
+                    origin: { x: 0 },
+                    colors: ['#d4af37', '#740001', '#f3e5ab']
+                });
+                confetti({
+                    particleCount: 80,
+                    angle: 120,
+                    spread: 55,
+                    origin: { x: 1 },
+                    colors: ['#d4af37', '#740001', '#f3e5ab']
+                });
+            }, 300);
+
+            renderResults();
+        }
+
+        function renderResults() {
+            const resultsCard = document.getElementById('results-card');
+            const winnersList = document.getElementById('winners-list');
+            const reservesSection = document.getElementById('reserves-section');
+            const reservesList = document.getElementById('reserves-list');
+
+            winnersList.innerHTML = '';
+            reservesList.innerHTML = '';
+
+            drawnWinners.forEach((name, index) => {
+                const el = document.createElement('div');
+                el.className = 'flex items-center justify-between p-3.5 rounded-xl bg-gradient-to-r from-amber-950/60 to-red-950/40 border border-amber-500/50';
+                el.innerHTML = `
+                    <div class="flex items-center gap-3">
+                        <span class="w-8 h-8 rounded-full bg-amber-500 text-black font-black flex items-center justify-center text-sm">
+                            ${index + 1}
+                        </span>
+                        <div>
+                            <div class="font-bold text-amber-100 text-base sm:text-lg">${name}</div>
+                            <div class="text-[11px] text-amber-400/80">برنده خوش‌شانس بلیت تئاتر هری پاتر 🎟️</div>
+                        </div>
+                    </div>
+                    <span class="text-xl">⚡</span>
+                `;
+                winnersList.appendChild(el);
+            });
+
+            if (drawnReserves.length > 0) {
+                reservesSection.classList.remove('hidden');
+                drawnReserves.forEach((name, index) => {
+                    const el = document.createElement('div');
+                    el.className = 'flex items-center justify-between p-2.5 rounded-lg bg-neutral-900/80 border border-neutral-700/60 text-xs';
+                    el.innerHTML = `
+                        <div class="flex items-center gap-2">
+                            <span class="w-5 h-5 rounded-full bg-neutral-800 text-gray-300 font-bold flex items-center justify-center text-[10px]">
+                                ${index + 1}
+                            </span>
+                            <span class="font-medium text-gray-200">${name}</span>
+                        </div>
+                        <span class="text-gray-500">رزرو</span>
+                    `;
+                    reservesList.appendChild(el);
+                });
+            } else {
+                reservesSection.classList.add('hidden');
+            }
+
+            resultsCard.classList.remove('hidden');
+            resultsCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+
+        function resetLottery() {
+            roller.textContent = 'آماده قرعه‌کشی...';
+            document.getElementById('results-card').classList.add('hidden');
+            drawnWinners = [];
+            drawnReserves = [];
+        }
+
+        function downloadResultsScreenshot() {
+            if (drawnWinners.length === 0) return;
+            const text = `🎉 تبریک به برنده مسابقه بلیت تئاتر هری پاتر!\n\n🏆 برنده اصلی: ${drawnWinners.join('، ')}\n${drawnReserves.length > 0 ? `👥 رزرو: ${drawnReserves.join('، ')}\n` : ''}\n📍 نمایش: تئاتر هری پاتر (تیوال: tiwall.com/p/harrypotter3)\n✨ برگزارکننده: نوشین ناصری (@noushinnaseri)`;
+            navigator.clipboard.writeText(text).then(() => {
+                alert('متن تبریک و اعلام برنده در کلیپ‌بورد کپی شد!');
+            });
+        }
+    </script>
+</body>
+</html>
